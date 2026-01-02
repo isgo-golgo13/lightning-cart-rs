@@ -88,4 +88,4 @@ watch:
 check-env:
 	@test -f .env || (echo "❌ .env file not found. Copy .env.example to .env" && exit 1)
 	@grep -q "STRIPE_SECRET_KEY=sk_" .env || (echo "❌ STRIPE_SECRET_KEY not configured" && exit 1)
-	@echo "✅ Environment configured"
+	@echo "Environment configured"

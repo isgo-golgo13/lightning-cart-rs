@@ -85,12 +85,11 @@ impl ErrorResponse {
     }
 }
 
-impl From<PaymentError> for (StatusCode, Json<ErrorResponse>) {
-    fn from(err: PaymentError) -> Self {
-        let code = err.status_code();
-        let response = ErrorResponse::new(err.to_string(), code);
-        (StatusCode::from_u16(code).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR), Json(response))
-    }
+
+fn payment_error_to_response(err: PaymentError) -> (StatusCode, Json<ErrorResponse>) {
+    let code = err.status_code();
+    let response = ErrorResponse::new(err.to_string(), code);
+    (StatusCode::from_u16(code).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR), Json(response))
 }
 
 // =============================================================================
@@ -176,12 +175,12 @@ pub async fn create_checkout(
 
     // Create checkout session
     let session = strategy
-        .create_checkout(&order, &state.success_url(), &state.cancel_url())
-        .await
-        .map_err(|e| {
-            error!("Failed to create checkout: {}", e);
-            <(StatusCode, Json<ErrorResponse>)>::from(e)
-        })?;
+    .create_checkout(&order, &state.success_url(), &state.cancel_url())
+    .await
+    .map_err(|e| {
+        error!("Failed to create checkout: {}", e);
+        payment_error_to_response(e)
+    })?;
 
     info!("Created checkout session: {}", session.session_id);
 
@@ -220,12 +219,12 @@ pub async fn stripe_webhook(
 
     // Verify and parse webhook
     let event = strategy
-        .verify_webhook(&body, signature)
-        .await
-        .map_err(|e| {
-            error!("Webhook verification failed: {}", e);
-            <(StatusCode, Json<ErrorResponse>)>::from(e)
-        })?;
+    .verify_webhook(&body, signature)
+    .await
+    .map_err(|e| {
+        error!("Webhook verification failed: {}", e);
+        payment_error_to_response(e)
+    })?;
 
     info!(
         "Received webhook: type={:?}, id={}",
@@ -236,8 +235,8 @@ pub async fn stripe_webhook(
     // In production, you'd implement a custom WebhookHandler
     let handler = LoggingWebhookHandler;
     dispatch_webhook_event(&handler, event).map_err(|e| {
-        error!("Webhook handler error: {}", e);
-        <(StatusCode, Json<ErrorResponse>)>::from(e)
+    error!("Webhook handler error: {}", e);
+    payment_error_to_response(e)
     })?;
 
     Ok(StatusCode::OK)

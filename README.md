@@ -178,6 +178,15 @@ stripe listen --forward-to localhost:8080/webhook/stripe
 cargo test --features integration
 ```
 
+## Quick Test (No Webhooks)
+```shell
+cp .env.template .env
+# Fill in Stripe keys
+cargo run -p pay-api
+# Open templates/test-checkout/index.html in browser
+# Click Pay $10 → Stripe test checkout → Use test card 4242 4242 4242 4242
+```
+
 
 
 

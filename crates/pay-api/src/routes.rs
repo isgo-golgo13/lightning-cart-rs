@@ -27,7 +27,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/checkout", post(handlers::create_checkout))
         // Products
         .route("/products", get(handlers::list_products))
-        .route("/products/:product_id", get(handlers::get_product));
+        .route("/products/{product_id}", get(handlers::get_product));
 
     // Webhook routes (no CORS, must accept raw body)
     let webhook_routes = Router::new()

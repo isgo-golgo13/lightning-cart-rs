@@ -39,3 +39,30 @@ lighting-cart-rs/
 └── templates/
     └── test-checkout/      # $10 Sabadell → FECU test
 ```
+
+
+## Cart Checkout Payment Strategy Trait
+
+```rust
+#[async_trait]
+pub trait PaymentStrategy: Send + Sync {
+    /// Create a checkout session, return redirect URL
+    async fn create_checkout(
+        &self,
+        order: &Order,
+        success_url: &str,
+        cancel_url: &str,
+    ) -> Result<CheckoutSession, PaymentError>;
+
+    /// Verify webhook signature, parse event
+    async fn verify_webhook(
+        &self,
+        payload: &[u8],
+        signature: &str,
+    ) -> Result<WebhookEvent, PaymentError>;
+
+    /// Provider name for logging/metrics
+    fn provider_name(&self) -> &'static str;
+}
+```
+

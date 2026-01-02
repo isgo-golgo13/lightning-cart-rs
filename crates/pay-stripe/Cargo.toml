@@ -1,0 +1,45 @@
+[package]
+name = "pay-stripe"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Stripe payment strategy for lightning-cart-rs"
+
+[dependencies]
+# Internal
+pay-core = { workspace = true }
+
+# Async
+async-trait.workspace = true
+tokio.workspace = true
+
+# HTTP client for Stripe API
+reqwest.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Environment config
+dotenvy.workspace = true
+
+# Crypto for webhook signature verification
+hmac.workspace = true
+sha2.workspace = true
+hex.workspace = true
+
+# Time
+chrono.workspace = true
+
+# Logging
+tracing.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util", "macros"] }
+wiremock = "0.6"

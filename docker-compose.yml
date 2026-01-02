@@ -1,0 +1,52 @@
+# =============================================================================
+# Lightning-Cart RS - Docker Compose
+# =============================================================================
+# Usage:
+#   docker-compose up          # Start with logs
+#   docker-compose up -d       # Start detached
+#   docker-compose down        # Stop and remove
+#   docker-compose logs -f     # Follow logs
+
+version: '3.8'
+
+services:
+  lightning-cart:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8080
+      - BASE_URL=${BASE_URL:-http://localhost:8080}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - RUST_LOG=${RUST_LOG:-info,pay_api=debug}
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+    volumes:
+      - ./config:/app/config:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # Stripe CLI for local webhook testing (optional)
+  # Uncomment and run: docker-compose --profile stripe-cli up
+  stripe-cli:
+    image: stripe/stripe-cli:latest
+    profiles:
+      - stripe-cli
+    environment:
+      - STRIPE_API_KEY=${STRIPE_SECRET_KEY}
+    command: listen --forward-to http://lightning-cart:8080/webhook/stripe
+    depends_on:
+      - lightning-cart
+
+networks:
+  default:
+    name: lightning-cart-network

@@ -21,6 +21,11 @@ pub fn create_router(state: AppState) -> Router {
         .allow_methods(Any)
         .allow_headers(Any);
 
+    // Static success/cancel pages
+    let checkout_routes = Router::new()
+    .route("/success", get(handlers::checkout_success))
+    .route("/cancel", get(handlers::checkout_cancel));
+
     // API routes
     let api_routes = Router::new()
         // Checkout
@@ -38,6 +43,8 @@ pub fn create_router(state: AppState) -> Router {
         // Health check at root
         .route("/health", get(handlers::health))
         .route("/", get(handlers::health))
+        // Checkout success/cancel pages
+        .nest("/checkout", checkout_routes)
         // API v1
         .nest("/api/v1", api_routes)
         // Webhooks

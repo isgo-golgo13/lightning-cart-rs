@@ -53,9 +53,9 @@ async fn main() -> anyhow::Result<()> {
     info!("🚀 Lightning-Cart starting on http://{}", addr);
 
     if !is_prod {
-        info!("📝 API docs: http://{}/health", addr);
-        info!("💳 Checkout: POST http://{}/api/v1/checkout", addr);
-        info!("🔔 Webhook: POST http://{}/webhook/stripe", addr);
+        info!("API docs: http://{}/health", addr);
+        info!("Checkout: POST http://{}/api/v1/checkout", addr);
+        info!("Webhook: POST http://{}/webhook/stripe", addr);
     }
 
     let listener = tokio::net::TcpListener::bind(addr).await?;

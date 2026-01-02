@@ -269,6 +269,47 @@ pub async fn get_product(
     Ok(Json(product.clone()))
 }
 
+
+/// Checkout success page
+pub async fn checkout_success(
+    axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> impl IntoResponse {
+    let session_id = params.get("session_id").map(|s| s.as_str()).unwrap_or("unknown");
+    axum::response::Html(format!(r#"
+<!DOCTYPE html>
+<html>
+<head><title>Payment Successful</title></head>
+<body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);">
+    <div style="background: white; padding: 60px; border-radius: 16px; text-align: center;">
+        <div style="font-size: 60px;">✅</div>
+        <h1>Payment Successful!</h1>
+        <p>Session: <code>{}</code></p>
+        <p style="color: #666;">Your $10 test payment was processed.</p>
+    </div>
+</body>
+</html>
+"#, session_id))
+}
+
+/// Checkout cancel page  
+pub async fn checkout_cancel() -> impl IntoResponse {
+    axum::response::Html(r#"
+<!DOCTYPE html>
+<html>
+<head><title>Payment Cancelled</title></head>
+<body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);">
+    <div style="background: white; padding: 60px; border-radius: 16px; text-align: center;">
+        <div style="font-size: 60px;">❌</div>
+        <h1>Payment Cancelled</h1>
+        <p style="color: #666;">No charges were made.</p>
+    </div>
+</body>
+</html>
+"#)
+}
+
+
+
 #[cfg(test)]
 mod tests {
     use super::*;

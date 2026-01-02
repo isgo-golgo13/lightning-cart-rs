@@ -1,0 +1,104 @@
+# Lightning-Cart Product Catalog
+# EngineVector.io Products
+#
+# This file defines all products available for purchase.
+# Prices are in the smallest currency unit (cents for USD).
+
+[[products]]
+id = "rang-play-rs-cli"
+name = "Rang Play RS - CLI"
+description = "High-performance RNG service for games and lotteries. CLI binary + Docker image."
+product_type = "digital"
+billing_interval = "one_time"
+active = true
+
+[products.price]
+amount = 1999  # $19.99
+currency = "usd"
+
+[products.metadata]
+tier = "starter"
+delivery = "docker,binary"
+
+[[products]]
+id = "rang-play-rs-pro"
+name = "Rang Play RS - Pro API"
+description = "Rang Play RS with unlimited API access, priority support, and SLA guarantee."
+product_type = "subscription"
+billing_interval = "monthly"
+active = true
+
+[products.price]
+amount = 2900  # $29.00/month
+currency = "usd"
+
+[products.metadata]
+tier = "pro"
+delivery = "api"
+rate_limit = "unlimited"
+
+[[products]]
+id = "site-ranker-rs-cli"
+name = "Site Ranker RS - CLI"
+description = "AI-powered SEO rank accelerator. Analyze and inject optimal SEO metadata."
+product_type = "digital"
+billing_interval = "one_time"
+active = true
+
+[products.price]
+amount = 4999  # $49.99
+currency = "usd"
+
+[products.metadata]
+tier = "starter"
+delivery = "docker,binary"
+
+[[products]]
+id = "site-ranker-rs-saas"
+name = "Site Ranker RS - SaaS"
+description = "Site Ranker RS cloud service with ML-powered trend prediction and API access."
+product_type = "subscription"
+billing_interval = "monthly"
+active = true
+
+[products.price]
+amount = 9900  # $99.00/month
+currency = "usd"
+
+[products.metadata]
+tier = "enterprise"
+delivery = "saas"
+features = "ml,api,dashboard"
+
+[[products]]
+id = "lightning-cart-rs"
+name = "Lightning Cart RS"
+description = "Ultra-fast, ultra-secure payment engine. The same engine powering this checkout."
+product_type = "digital"
+billing_interval = "one_time"
+active = true
+
+[products.price]
+amount = 9999  # $99.99
+currency = "usd"
+
+[products.metadata]
+tier = "pro"
+delivery = "docker,wasm,source"
+
+# Test product for $10 Sabadell → FECU validation
+[[products]]
+id = "test-product-10"
+name = "Test Product ($10)"
+description = "Test product for payment validation. DO NOT USE IN PRODUCTION."
+product_type = "digital"
+billing_interval = "one_time"
+active = true
+
+[products.price]
+amount = 1000  # $10.00
+currency = "usd"
+
+[products.metadata]
+tier = "test"
+note = "Sabadell → FECU validation"

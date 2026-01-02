@@ -1,0 +1,71 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/pay-core",
+    "crates/pay-stripe",
+    "crates/pay-api",
+    "crates/pay-wasm",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+authors = ["EngineVector <dev@enginevector.io>"]
+license = "MIT"
+repository = "https://github.com/isgo-golgo13/lightning-cart-rs"
+
+[workspace.dependencies]
+# Internal crates
+pay-core = { path = "crates/pay-core" }
+pay-stripe = { path = "crates/pay-stripe" }
+pay-api = { path = "crates/pay-api" }
+
+# Async runtime
+tokio = { version = "1.43", features = ["full"] }
+async-trait = "0.1"
+
+# Web framework
+axum = { version = "0.8", features = ["macros"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Logging & tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Environment & config
+dotenvy = "0.15"
+
+# Crypto (webhook signature verification)
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# UUID for idempotency keys
+uuid = { version = "1.11", features = ["v4", "serde"] }
+
+# WASM (optional)
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

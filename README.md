@@ -188,6 +188,35 @@ cargo run -p pay-api
 ```
 
 
+## SaaS Product Archtiecture and SaaS Workflow (to Clients)
+
+```shell
+┌─────────────────────────┐
+│  enginevector.io        │  ← Static site (Vercel)
+│  /products/rang-play    │
+│  "Buy Now" button       │
+└───────────┬─────────────┘
+            │ POST /api/v1/checkout
+            ▼
+┌─────────────────────────┐
+│  pay.enginevector.io    │  ← lightning-cart-rs (Fly.io)
+│  Creates Stripe session │
+└───────────┬─────────────┘
+            │ redirect
+            ▼
+┌─────────────────────────┐
+│  Stripe Checkout        │  ← Hosted by Stripe
+│  Customer pays          │
+└───────────┬─────────────┘
+            │ redirect
+            ▼
+┌─────────────────────────┐
+│  enginevector.io        │
+│  /thank-you             │
+└─────────────────────────┘
+```
+
+
 
 
 ## License

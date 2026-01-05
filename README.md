@@ -188,6 +188,31 @@ cargo run -p pay-api
 ```
 
 
+
+## Running the Packages 
+
+```shell
+cargo run -p pay-api    # Run the pay-api crate (has the binary)
+cargo run -p pay-core   # Would fail — no binary, just a library
+cargo test -p pay-stripe # Run tests only for pay-stripe crate
+```
+
+Since lightning-cart-rs is a **multi-crate workspace**, it is required to specify which one:
+```
+lightning-cart-rs/
+├── Cargo.toml          ← workspace root
+├── crates/
+│   ├── pay-api/        ← has [[bin]] lightning-cart
+│   ├── pay-core/       ← library only
+│   ├── pay-stripe/     ← library only
+│   └── pay-wasm/       ← library only
+``` 
+
+
+
+
+
+
 ## SaaS Product Archtiecture and SaaS Workflow (to Clients)
 
 ```shell

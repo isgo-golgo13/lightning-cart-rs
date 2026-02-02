@@ -141,13 +141,13 @@ delivery = "google_meet"
 duration_minutes = 60
 
 # =============================================================================
-# DRONGRID.IO PRODUCTS
+# DRONEGRID.IO PRODUCTS
 # =============================================================================
 
 [[products]]
-id = "drongrid-consult-1hr"
-site_id = "drongrid"
-name = "DronGrid Consulting - 1 Hour"
+id = "dronegrid-consult-1hr"
+site_id = "dronegrid"
+name = "DroneGrid Consulting - 1 Hour"
 description = "1-hour consulting session on drone tracking, fleet management, or convoy systems."
 product_type = "service"
 billing_interval = "onetime"
@@ -163,9 +163,9 @@ delivery = "google_meet"
 duration_minutes = 60
 
 [[products]]
-id = "drongrid-pro-monthly"
-site_id = "drongrid"
-name = "DronGrid Pro - Monthly"
+id = "dronegrid-pro-monthly"
+site_id = "dronegrid"
+name = "DroneGrid Pro - Monthly"
 description = "Professional drone tracking with unlimited vehicles, real-time convoy monitoring."
 product_type = "subscription"
 billing_interval = "monthly"

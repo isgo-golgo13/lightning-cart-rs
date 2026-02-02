@@ -2,13 +2,13 @@
 # Each site has its own branding, URLs, and statement descriptor
 #
 # The statement_descriptor_suffix appears on customer bank statements:
-# "CHARGEGUN* SPOKENHOPE" or "CHARGEGUN* DRONGRID"
+# "CHARGEGUN* SPOKENHOPE" or "CHARGEGUN* DRONEGRID"
 
 [[sites]]
 id = "chargegun"
 name = "ChargeGun"
 domain = "chargegun.io"
-statement_descriptor_suffix = "CHARGEGUN"
+statement_descriptor_suffix = ""
 success_url = "https://chargegun.io/checkout/success"
 cancel_url = "https://chargegun.io/checkout/cancel"
 support_email = "info@chargegun.io"
@@ -31,13 +31,13 @@ active = true
 business_type = "ai_p2p_software"
 
 [[sites]]
-id = "drongrid"
-name = "DronGrid"
-domain = "drongrid.io"
-statement_descriptor_suffix = "DRONGRID"
-success_url = "https://drongrid.io/checkout/success"
-cancel_url = "https://drongrid.io/checkout/cancel"
-support_email = "info@drongrid.io"
+id = "dronegrid"
+name = "DroneGrid"
+domain = "dronegrid.io"
+statement_descriptor_suffix = "DRONEGRID"
+success_url = "https://dronegrid.io/checkout/success"
+cancel_url = "https://dronegrid.io/checkout/cancel"
+support_email = "info@dronegrid.io"
 active = true
 
 [sites.metadata]

@@ -217,14 +217,14 @@ lightning-cart-rs/
 
 ```shell
 ┌─────────────────────────┐
-│  enginevector.io        │  ← Static site (Vercel)
+│  chargegun.io        │  ← Static site (Vercel)
 │  /products/rang-play    │
 │  "Buy Now" button       │
 └───────────┬─────────────┘
             │ POST /api/v1/checkout
             ▼
 ┌─────────────────────────┐
-│  pay.enginevector.io    │  ← lightning-cart-rs (Fly.io)
+│  pay.chargegun.io    │  ← lightning-cart-rs (Fly.io)
 │  Creates Stripe session │
 └───────────┬─────────────┘
             │ redirect
@@ -236,10 +236,43 @@ lightning-cart-rs/
             │ redirect
             ▼
 ┌─────────────────────────┐
-│  enginevector.io        │
+│  chargegun.io        │
 │  /thank-you             │
 └─────────────────────────┘
 ```
+
+
+## Single Stripe Account -> Multiple Products
+
+```shell
+One Stripe Account — Multiple Products? Yes, absolutely.
+Stripe fully supports multiple websites/products under a single account. This is the standard setup for solo founders and small studios.
+How It Works
+ChargeGun LLC (Stripe Account)
+├── chargegun.io        → Lightning-Cart-RS products
+├── dronegrid.io        → Drone tracking subscriptions  
+├── luckydrone.io       → Edge/P2P software licenses
+└── spokenhope.care     → Spiritual comfort subscriptions
+└── 1099er.app          → US-only freelancer 1099 invoicing  subscriptions
+```
+
+
+## Archiecture 
+
+```shell
+┌─────────────────────────────────────────────────────────────┐
+│                 Lightning-Cart-RS (Fly.io)                  │
+│              Unified Payment Gateway Service                │
+└─────────┬──────────┬───────────┬────────────────────────────┘
+          │          │           │
+          ▼          ▼           ▼
+    ChargeGun    LuckyDrone   SpokenHope    DroneGrid
+      .io          .io         .care          .io
+      
+Bank Statement: CHARGEGUN   CHARGEGUN*     CHARGEGUN*    CHARGEGUN*
+                            LUCKYDRONE     SPOKENHOPE    DRONEGRID
+```
+
 
 
 

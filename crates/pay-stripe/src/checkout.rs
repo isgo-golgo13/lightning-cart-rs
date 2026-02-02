@@ -178,6 +178,13 @@ impl PaymentStrategy for StripeCheckoutStrategy {
         // Add metadata
         form_params.push(("metadata[order_id]".to_string(), order.id.clone()));
         for (key, value) in &order.metadata {
+            // Handle statement_descriptor_suffix specially - it goes to payment_intent_data
+            if key == "statement_descriptor_suffix" {
+                form_params.push((
+                    "payment_intent_data[statement_descriptor_suffix]".to_string(),
+                    value.clone(),
+                ));
+            }
             form_params.push((format!("metadata[{}]", key), value.clone()));
         }
 

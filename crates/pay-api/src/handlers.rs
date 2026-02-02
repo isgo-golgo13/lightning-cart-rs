@@ -116,8 +116,8 @@ pub async fn create_checkout(
     Json(request): Json<CreateCheckoutRequest>,
 ) -> Result<Json<CreateCheckoutResponse>, (StatusCode, Json<ErrorResponse>)> {
     // Use site_id from request body, or default to chargegun
-    let site_id = request.site_id.as_deref();
-    create_checkout_internal(&state, request, site_id).await
+    let site_id = request.site_id.clone();
+    create_checkout_internal(&state, request, site_id.as_deref()).await
 }
 
 /// Create a checkout session for a specific site (multi-tenant route)

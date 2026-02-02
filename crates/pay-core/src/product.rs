@@ -312,7 +312,7 @@ impl ProductCatalog {
     }
 
     /// Get all active products for a specific site
-    pub fn active_products_for_site(&self, site_id: &str) -> impl Iterator<Item = &Product> {
+    pub fn active_products_for_site<'a>(&'a self, site_id: &'a str) -> impl Iterator<Item = &'a Product> {
         self.products
             .iter()
             .filter(move |p| p.active && p.site_id == site_id)

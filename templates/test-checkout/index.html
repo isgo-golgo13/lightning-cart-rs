@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lightning-Cart Test Checkout</title>
+    <title>Lightning-Cart Multi-Tenant Test</title>
     <style>
         * {
             box-sizing: border-box;
@@ -25,7 +25,7 @@
             background: white;
             border-radius: 16px;
             padding: 40px;
-            max-width: 500px;
+            max-width: 600px;
             width: 100%;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
@@ -42,6 +42,43 @@
 
         .logo span {
             color: #f0a500;
+        }
+
+        .site-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .site-btn {
+            padding: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+
+        .site-btn:hover {
+            border-color: #f0a500;
+        }
+
+        .site-btn.selected {
+            border-color: #f0a500;
+            background: #fffbeb;
+        }
+
+        .site-btn .site-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: #1a1a2e;
+        }
+
+        .site-btn .site-domain {
+            font-size: 12px;
+            color: #666;
         }
 
         .product-card {
@@ -86,13 +123,13 @@
             line-height: 1.5;
         }
 
-        .test-badge {
+        .product-site {
             display: inline-block;
-            background: #ff4444;
-            color: white;
+            background: #e3f2fd;
+            color: #1976d2;
             padding: 4px 8px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             margin-top: 10px;
         }
@@ -176,35 +213,45 @@
             color: #999;
             font-size: 12px;
         }
+
+        .products-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .no-products {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="logo">
             <h1>⚡ Lightning<span>Cart</span></h1>
-            <p style="color: #666; margin-top: 5px;">Test Checkout</p>
+            <p style="color: #666; margin-top: 5px;">Multi-Tenant Test Checkout</p>
         </div>
 
-        <div class="product-card selected" id="product-card">
-            <div class="product-header">
-                <span class="product-name">Test Product</span>
-                <span class="product-price">$10.00</span>
-            </div>
-            <p class="product-desc">
-                Payment validation test. Charges $10 to your card.
-                <br>Proceeds go to FECU account.
-            </p>
-            <span class="test-badge">🧪 TEST MODE</span>
+        <h3 style="margin-bottom: 12px; color: #1a1a2e;">Select Site</h3>
+        <div class="site-selector" id="site-selector">
+            <!-- Sites loaded dynamically -->
+        </div>
+
+        <h3 style="margin-bottom: 12px; color: #1a1a2e;">Select Product</h3>
+        <div class="products-list" id="products-list">
+            <div class="no-products">Select a site to load products</div>
         </div>
 
         <div class="config-section">
-            <h3>API Endpoint</h3>
+            <h3>API Configuration</h3>
             <input 
                 type="text" 
-                id="api-url" 
+                id="api-base" 
                 class="api-input" 
-                value="http://localhost:8080/api/v1/checkout"
-                placeholder="API endpoint URL"
+                value="http://localhost:8080"
+                placeholder="API base URL"
             >
             <input 
                 type="email" 
@@ -214,36 +261,150 @@
             >
         </div>
 
-        <button class="checkout-btn" id="checkout-btn" onclick="checkout()">
-            ⚡ Pay $10.00
+        <button class="checkout-btn" id="checkout-btn" onclick="checkout()" disabled>
+            Select a product to checkout
         </button>
 
         <div class="status" id="status"></div>
 
         <div class="footer">
             <p>Lightning-Cart RS v0.1.0</p>
-            <p>Sabadell → FECU Test</p>
+            <p>Multi-Tenant Mode</p>
         </div>
     </div>
 
     <script>
-        const PRODUCT_ID = 'test-product-10';
-        
+        let selectedSite = null;
+        let selectedProduct = null;
+
+        // Site colors for visual distinction
+        const siteColors = {
+            'chargegun': '#f0a500',
+            'luckydrone': '#4caf50',
+            'drongrid': '#2196f3',
+            'spokenhope': '#9c27b0'
+        };
+
+        async function loadSites() {
+            const baseUrl = document.getElementById('api-base').value;
+            const container = document.getElementById('site-selector');
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/v1/sites`);
+                const data = await response.json();
+                
+                container.innerHTML = data.sites.map(site => `
+                    <button class="site-btn" onclick="selectSite('${site.id}')" id="site-${site.id}">
+                        <div class="site-name">${site.name}</div>
+                        <div class="site-domain">${site.domain}</div>
+                    </button>
+                `).join('');
+            } catch (error) {
+                container.innerHTML = `
+                    <button class="site-btn" onclick="selectSite('chargegun')" id="site-chargegun">
+                        <div class="site-name">ChargeGun</div>
+                        <div class="site-domain">chargegun.io</div>
+                    </button>
+                    <button class="site-btn" onclick="selectSite('luckydrone')" id="site-luckydrone">
+                        <div class="site-name">LuckyDrone</div>
+                        <div class="site-domain">luckydrone.io</div>
+                    </button>
+                    <button class="site-btn" onclick="selectSite('drongrid')" id="site-drongrid">
+                        <div class="site-name">DronGrid</div>
+                        <div class="site-domain">drongrid.io</div>
+                    </button>
+                    <button class="site-btn" onclick="selectSite('spokenhope')" id="site-spokenhope">
+                        <div class="site-name">Spoken Hope</div>
+                        <div class="site-domain">spokenhope.care</div>
+                    </button>
+                `;
+            }
+        }
+
+        async function selectSite(siteId) {
+            // Update selection UI
+            document.querySelectorAll('.site-btn').forEach(btn => btn.classList.remove('selected'));
+            document.getElementById(`site-${siteId}`).classList.add('selected');
+            
+            selectedSite = siteId;
+            selectedProduct = null;
+            updateCheckoutButton();
+            
+            // Load products for this site
+            await loadProducts(siteId);
+        }
+
+        async function loadProducts(siteId) {
+            const baseUrl = document.getElementById('api-base').value;
+            const container = document.getElementById('products-list');
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/v1/${siteId}/products`);
+                const data = await response.json();
+                
+                if (data.products.length === 0) {
+                    container.innerHTML = '<div class="no-products">No products found for this site</div>';
+                    return;
+                }
+                
+                container.innerHTML = data.products.map(product => `
+                    <div class="product-card" onclick="selectProduct('${product.id}', ${product.price.amount})" id="product-${product.id}">
+                        <div class="product-header">
+                            <span class="product-name">${product.name}</span>
+                            <span class="product-price">$${(product.price.amount / 100).toFixed(2)}</span>
+                        </div>
+                        <p class="product-desc">${product.description}</p>
+                        <span class="product-site">${product.site_id}</span>
+                    </div>
+                `).join('');
+            } catch (error) {
+                container.innerHTML = `<div class="no-products">Error loading products: ${error.message}</div>`;
+            }
+        }
+
+        function selectProduct(productId, amount) {
+            // Update selection UI
+            document.querySelectorAll('.product-card').forEach(card => card.classList.remove('selected'));
+            document.getElementById(`product-${productId}`).classList.add('selected');
+            
+            selectedProduct = { id: productId, amount: amount };
+            updateCheckoutButton();
+        }
+
+        function updateCheckoutButton() {
+            const btn = document.getElementById('checkout-btn');
+            
+            if (selectedSite && selectedProduct) {
+                btn.disabled = false;
+                btn.textContent = `⚡ Pay $${(selectedProduct.amount / 100).toFixed(2)} (${selectedSite})`;
+            } else if (selectedSite) {
+                btn.disabled = true;
+                btn.textContent = 'Select a product to checkout';
+            } else {
+                btn.disabled = true;
+                btn.textContent = 'Select a site and product';
+            }
+        }
+
         async function checkout() {
+            if (!selectedSite || !selectedProduct) {
+                return;
+            }
+
             const btn = document.getElementById('checkout-btn');
             const status = document.getElementById('status');
-            const apiUrl = document.getElementById('api-url').value;
+            const baseUrl = document.getElementById('api-base').value;
             const email = document.getElementById('customer-email').value;
 
             btn.disabled = true;
             btn.textContent = '⏳ Processing...';
             status.className = 'status loading';
-            status.textContent = 'Creating checkout session...';
+            status.textContent = `Creating checkout session for ${selectedSite}...`;
 
             try {
                 const payload = {
                     items: [
-                        { product_id: PRODUCT_ID, quantity: 1 }
+                        { product_id: selectedProduct.id, quantity: 1 }
                     ]
                 };
 
@@ -251,7 +412,8 @@
                     payload.customer_email = email;
                 }
 
-                const response = await fetch(apiUrl, {
+                // Use multi-tenant endpoint
+                const response = await fetch(`${baseUrl}/api/v1/${selectedSite}/checkout`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -276,16 +438,15 @@
                 status.className = 'status error';
                 status.textContent = `Error: ${error.message}`;
                 btn.disabled = false;
-                btn.textContent = '⚡ Pay $10.00';
+                updateCheckoutButton();
             }
         }
 
-        // Allow Enter key to submit
-        document.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                checkout();
-            }
-        });
+        // Load sites on page load
+        document.addEventListener('DOMContentLoaded', loadSites);
+        
+        // Reload sites when API URL changes
+        document.getElementById('api-base').addEventListener('change', loadSites);
     </script>
 </body>
 </html>

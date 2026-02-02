@@ -1,11 +1,17 @@
 # Lightning-Cart Product Catalog
-# EngineVector.io Products
+# ChargeGun.io Multi-Tenant Products
 #
 # This file defines all products available for purchase.
 # Prices are in the smallest currency unit (cents for USD).
+# Products can be site-specific via site_id or shared across all sites.
+
+# =============================================================================
+# CHARGEGUN.IO PRODUCTS
+# =============================================================================
 
 [[products]]
 id = "rang-play-rs-cli"
+site_id = "chargegun"
 name = "Rang Play RS - CLI"
 description = "High-performance RNG service for games and lotteries. CLI binary + Docker image."
 product_type = "digital"
@@ -22,6 +28,7 @@ delivery = "docker,binary"
 
 [[products]]
 id = "rang-play-rs-pro"
+site_id = "chargegun"
 name = "Rang Play RS - Pro API"
 description = "Rang Play RS with unlimited API access, priority support, and SLA guarantee."
 product_type = "subscription"
@@ -39,6 +46,7 @@ rate_limit = "unlimited"
 
 [[products]]
 id = "site-ranker-rs-cli"
+site_id = "chargegun"
 name = "Site Ranker RS - CLI"
 description = "AI-powered SEO rank accelerator. Analyze and inject optimal SEO metadata."
 product_type = "digital"
@@ -55,6 +63,7 @@ delivery = "docker,binary"
 
 [[products]]
 id = "site-ranker-rs-saas"
+site_id = "chargegun"
 name = "Site Ranker RS - SaaS"
 description = "Site Ranker RS cloud service with ML-powered trend prediction and API access."
 product_type = "subscription"
@@ -72,6 +81,7 @@ features = "ml,api,dashboard"
 
 [[products]]
 id = "lightning-cart-rs"
+site_id = "chargegun"
 name = "Lightning Cart RS"
 description = "Ultra-fast, ultra-secure payment engine. The same engine powering this checkout."
 product_type = "digital"
@@ -86,9 +96,156 @@ currency = "usd"
 tier = "pro"
 delivery = "docker,wasm,source"
 
+# =============================================================================
+# CHARGEGUN.IO CONSULTING
+# =============================================================================
+
+[[products]]
+id = "chargegun-consult-1hr"
+site_id = "chargegun"
+name = "ChargeGun Consulting - 1 Hour"
+description = "1-hour consulting session on payments, gaming infrastructure, or crypto systems."
+product_type = "service"
+billing_interval = "onetime"
+active = true
+
+[products.price]
+amount = 12500  # $125.00
+currency = "usd"
+
+[products.metadata]
+tier = "consulting"
+delivery = "google_meet"
+duration_minutes = 60
+
+# =============================================================================
+# LUCKYDRONE.IO PRODUCTS
+# =============================================================================
+
+[[products]]
+id = "luckydrone-consult-1hr"
+site_id = "luckydrone"
+name = "LuckyDrone Consulting - 1 Hour"
+description = "1-hour consulting session on Rust/C++ native AI, P2P systems, or edge-to-cloud architecture."
+product_type = "service"
+billing_interval = "onetime"
+active = true
+
+[products.price]
+amount = 12500  # $125.00
+currency = "usd"
+
+[products.metadata]
+tier = "consulting"
+delivery = "google_meet"
+duration_minutes = 60
+
+# =============================================================================
+# DRONGRID.IO PRODUCTS
+# =============================================================================
+
+[[products]]
+id = "drongrid-consult-1hr"
+site_id = "drongrid"
+name = "DronGrid Consulting - 1 Hour"
+description = "1-hour consulting session on drone tracking, fleet management, or convoy systems."
+product_type = "service"
+billing_interval = "onetime"
+active = true
+
+[products.price]
+amount = 12500  # $125.00
+currency = "usd"
+
+[products.metadata]
+tier = "consulting"
+delivery = "google_meet"
+duration_minutes = 60
+
+[[products]]
+id = "drongrid-pro-monthly"
+site_id = "drongrid"
+name = "DronGrid Pro - Monthly"
+description = "Professional drone tracking with unlimited vehicles, real-time convoy monitoring."
+product_type = "subscription"
+billing_interval = "monthly"
+active = true
+
+[products.price]
+amount = 4900  # $49.00/month
+currency = "usd"
+
+[products.metadata]
+tier = "pro"
+delivery = "saas"
+features = "unlimited_drones,realtime,convoy"
+
+# =============================================================================
+# SPOKENHOPE.CARE PRODUCTS
+# =============================================================================
+
+[[products]]
+id = "spokenhope-reflection"
+site_id = "spokenhope"
+name = "Spoken Hope - Single Reflection"
+description = "One voice-to-comfort reflection session. Receive pastoral comfort drawn from scripture."
+product_type = "service"
+billing_interval = "onetime"
+active = true
+
+[products.price]
+amount = 250  # $2.50
+currency = "usd"
+
+[products.metadata]
+tier = "single"
+delivery = "instant"
+
+[[products]]
+id = "spokenhope-monthly"
+site_id = "spokenhope"
+name = "Spoken Hope - Monthly"
+description = "Unlimited daily reflections. Voice your heart, receive scripture-based comfort."
+product_type = "subscription"
+billing_interval = "monthly"
+active = true
+
+[products.price]
+amount = 800  # $8.00/month
+currency = "usd"
+
+[products.metadata]
+tier = "unlimited"
+delivery = "subscription"
+reflections = "unlimited"
+
+[[products]]
+id = "spokenhope-yearly"
+site_id = "spokenhope"
+name = "Spoken Hope - Yearly"
+description = "Unlimited daily reflections for one year. 25% savings over monthly."
+product_type = "subscription"
+billing_interval = "yearly"
+active = true
+
+[products.price]
+amount = 7200  # $72.00/year (25% off)
+currency = "usd"
+
+[products.metadata]
+tier = "unlimited"
+delivery = "subscription"
+reflections = "unlimited"
+savings = "25%"
+
+# =============================================================================
+# TEST PRODUCTS (all sites)
+# =============================================================================
+
 # Test product for $10 Sabadell → FECU validation
 [[products]]
 id = "test-product-10"
+site_id = "chargegun"
 name = "Test Product ($10)"
 description = "Test product for payment validation. DO NOT USE IN PRODUCTION."
 product_type = "digital"

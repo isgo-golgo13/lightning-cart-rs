@@ -1,0 +1,57 @@
+# Lightning-Cart Multi-Tenant Site Configuration
+# Each site has its own branding, URLs, and statement descriptor
+#
+# The statement_descriptor_suffix appears on customer bank statements:
+# "CHARGEGUN* SPOKENHOPE" or "CHARGEGUN* DRONGRID"
+
+[[sites]]
+id = "chargegun"
+name = "ChargeGun"
+domain = "chargegun.io"
+statement_descriptor_suffix = "CHARGEGUN"
+success_url = "https://chargegun.io/checkout/success"
+cancel_url = "https://chargegun.io/checkout/cancel"
+support_email = "info@chargegun.io"
+active = true
+
+[sites.metadata]
+business_type = "payments_gaming_crypto"
+
+[[sites]]
+id = "luckydrone"
+name = "LuckyDrone"
+domain = "luckydrone.io"
+statement_descriptor_suffix = "LUCKYDRONE"
+success_url = "https://luckydrone.io/checkout/success"
+cancel_url = "https://luckydrone.io/checkout/cancel"
+support_email = "info@luckydrone.io"
+active = true
+
+[sites.metadata]
+business_type = "ai_p2p_software"
+
+[[sites]]
+id = "drongrid"
+name = "DronGrid"
+domain = "drongrid.io"
+statement_descriptor_suffix = "DRONGRID"
+success_url = "https://drongrid.io/checkout/success"
+cancel_url = "https://drongrid.io/checkout/cancel"
+support_email = "info@drongrid.io"
+active = true
+
+[sites.metadata]
+business_type = "drone_tracking"
+
+[[sites]]
+id = "spokenhope"
+name = "Spoken Hope"
+domain = "spokenhope.care"
+statement_descriptor_suffix = "SPOKENHOPE"
+success_url = "https://spokenhope.care/thank-you"
+cancel_url = "https://spokenhope.care/"
+support_email = "info@spokenhope.care"
+active = true
+
+[sites.metadata]
+business_type = "spiritual_wellness"

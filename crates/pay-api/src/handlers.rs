@@ -1,6 +1,7 @@
 //! # Request Handlers
 //!
 //! Axum request handlers for the payment API.
+//! Supports multi-tenant checkout with site-specific URLs and statement descriptors.
 
 use crate::state::AppState;
 use axum::{
@@ -33,6 +34,9 @@ pub struct CreateCheckoutRequest {
     /// Idempotency key (optional)
     #[serde(default)]
     pub idempotency_key: Option<String>,
+    /// Site ID for multi-tenant (optional, can also be in URL path)
+    #[serde(default)]
+    pub site_id: Option<String>,
 }
 
 /// Item in checkout request
@@ -105,11 +109,40 @@ pub async fn health() -> impl IntoResponse {
     }))
 }
 
-/// Create a checkout session
+/// Create a checkout session (legacy route - uses default site)
 #[instrument(skip(state, request), fields(items = request.items.len()))]
 pub async fn create_checkout(
     State(state): State<AppState>,
     Json(request): Json<CreateCheckoutRequest>,
+) -> Result<Json<CreateCheckoutResponse>, (StatusCode, Json<ErrorResponse>)> {
+    // Use site_id from request body, or default to chargegun
+    let site_id = request.site_id.as_deref();
+    create_checkout_internal(&state, request, site_id).await
+}
+
+/// Create a checkout session for a specific site (multi-tenant route)
+#[instrument(skip(state, request), fields(site_id = %site_id, items = request.items.len()))]
+pub async fn create_checkout_for_site(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+    Json(request): Json<CreateCheckoutRequest>,
+) -> Result<Json<CreateCheckoutResponse>, (StatusCode, Json<ErrorResponse>)> {
+    // Validate site exists
+    if !state.sites.has_site(&site_id) {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse::new(format!("Site not found: {}", site_id), 404)),
+        ));
+    }
+
+    create_checkout_internal(&state, request, Some(&site_id)).await
+}
+
+/// Internal checkout creation (shared logic)
+async fn create_checkout_internal(
+    state: &AppState,
+    request: CreateCheckoutRequest,
+    site_id: Option<&str>,
 ) -> Result<Json<CreateCheckoutResponse>, (StatusCode, Json<ErrorResponse>)> {
     // Validate request
     if request.items.is_empty() {
@@ -142,6 +175,16 @@ pub async fn create_checkout(
         order.idempotency_key = Some(key.clone());
     }
 
+    // Add site_id to order metadata for webhook processing
+    if let Some(sid) = site_id {
+        order.metadata.insert("site_id".to_string(), sid.to_string());
+    }
+
+    // Add statement descriptor suffix to metadata for Stripe
+    if let Some(descriptor) = state.statement_descriptor_for_site(site_id) {
+        order.metadata.insert("statement_descriptor_suffix".to_string(), descriptor);
+    }
+
     // Add line items
     for item in &request.items {
         let product = state.catalog.get(&item.product_id).ok_or_else(|| {
@@ -167,20 +210,26 @@ pub async fn create_checkout(
         order.add_item(LineItem::from_product(product, item.quantity));
     }
 
+    // Get site-specific URLs
+    let success_url = state.success_url_for_site(site_id);
+    let cancel_url = state.cancel_url_for_site(site_id);
+
     info!(
-        "Creating checkout: {} items, total={}",
+        "Creating checkout: site={:?}, {} items, total={}, success_url={}",
+        site_id,
         order.item_count(),
-        order.total().display()
+        order.total().display(),
+        success_url
     );
 
     // Create checkout session
     let session = strategy
-    .create_checkout(&order, &state.success_url(), &state.cancel_url())
-    .await
-    .map_err(|e| {
-        error!("Failed to create checkout: {}", e);
-        payment_error_to_response(e)
-    })?;
+        .create_checkout(&order, &success_url, &cancel_url)
+        .await
+        .map_err(|e| {
+            error!("Failed to create checkout: {}", e);
+            payment_error_to_response(e)
+        })?;
 
     info!("Created checkout session: {}", session.session_id);
 
@@ -219,33 +268,58 @@ pub async fn stripe_webhook(
 
     // Verify and parse webhook
     let event = strategy
-    .verify_webhook(&body, signature)
-    .await
-    .map_err(|e| {
-        error!("Webhook verification failed: {}", e);
-        payment_error_to_response(e)
-    })?;
+        .verify_webhook(&body, signature)
+        .await
+        .map_err(|e| {
+            error!("Webhook verification failed: {}", e);
+            payment_error_to_response(e)
+        })?;
 
     info!(
         "Received webhook: type={:?}, id={}",
         event.event_type, event.event_id
     );
 
+    // Extract site_id from event metadata if present
+    let site_id = event
+        .raw_data
+        .as_ref()
+        .and_then(|d| d.get("metadata"))
+        .and_then(|m| m.get("site_id"))
+        .and_then(|v| v.as_str());
+
+    if let Some(sid) = site_id {
+        info!("Webhook for site: {}", sid);
+    }
+
     // Dispatch to handler
     // In production, you'd implement a custom WebhookHandler
     let handler = LoggingWebhookHandler;
     dispatch_webhook_event(&handler, event).map_err(|e| {
-    error!("Webhook handler error: {}", e);
-    payment_error_to_response(e)
+        error!("Webhook handler error: {}", e);
+        payment_error_to_response(e)
     })?;
 
     Ok(StatusCode::OK)
 }
 
-/// Get products list
+/// Get products list (all sites)
 pub async fn list_products(State(state): State<AppState>) -> impl IntoResponse {
     let products: Vec<_> = state.catalog.active_products().collect();
     Json(serde_json::json!({
+        "products": products,
+        "count": products.len()
+    }))
+}
+
+/// Get products for a specific site
+pub async fn list_products_for_site(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+) -> impl IntoResponse {
+    let products: Vec<_> = state.catalog.active_products_for_site(&site_id).collect();
+    Json(serde_json::json!({
+        "site_id": site_id,
         "products": products,
         "count": products.len()
     }))
@@ -269,6 +343,32 @@ pub async fn get_product(
     Ok(Json(product.clone()))
 }
 
+/// List all registered sites
+pub async fn list_sites(State(state): State<AppState>) -> impl IntoResponse {
+    let sites: Vec<_> = state.sites.active_sites().collect();
+    Json(serde_json::json!({
+        "sites": sites,
+        "count": sites.len()
+    }))
+}
+
+/// Get single site info
+pub async fn get_site(
+    State(state): State<AppState>,
+    Path(site_id): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+    let site = state.sites.get(&site_id).ok_or_else(|| {
+        (
+            StatusCode::NOT_FOUND,
+            Json(ErrorResponse::new(
+                format!("Site not found: {}", site_id),
+                404,
+            )),
+        )
+    })?;
+
+    Ok(Json(site.clone()))
+}
 
 /// Checkout success page
 pub async fn checkout_success(
@@ -284,7 +384,7 @@ pub async fn checkout_success(
         <div style="font-size: 60px;">✅</div>
         <h1>Payment Successful!</h1>
         <p>Session: <code>{}</code></p>
-        <p style="color: #666;">Your $10 test payment was processed.</p>
+        <p style="color: #666;">Your payment was processed successfully.</p>
     </div>
 </body>
 </html>
@@ -324,7 +424,7 @@ mod tests {
     #[test]
     fn test_payment_error_conversion() {
         let err = PaymentError::InvalidRequest("Bad data".to_string());
-        let (status, _json) = <(StatusCode, Json<ErrorResponse>)>::from(err);
+        let (status, _json) = payment_error_to_response(err);
         assert_eq!(status, StatusCode::BAD_REQUEST);
     }
 }

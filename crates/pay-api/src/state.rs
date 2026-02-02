@@ -1,9 +1,9 @@
 //! # Application State
 //!
 //! Shared state for the Axum application.
-//! Contains payment strategies, configuration, and product catalog.
+//! Contains payment strategies, configuration, site registry, and product catalog.
 
-use pay_core::{BoxedPaymentStrategy, CheckoutUrls, PaymentStrategySelector, ProductCatalog};
+use pay_core::{BoxedPaymentStrategy, CheckoutUrls, PaymentStrategySelector, ProductCatalog, Site, SiteRegistry};
 use pay_stripe::StripeCheckoutStrategy;
 use std::sync::Arc;
 
@@ -14,7 +14,7 @@ pub struct AppConfig {
     pub host: String,
     /// Port to listen on
     pub port: u16,
-    /// Base URL for callbacks
+    /// Base URL for callbacks (fallback)
     pub base_url: String,
     /// Environment (development, staging, production)
     pub environment: String,
@@ -63,7 +63,9 @@ pub struct AppState {
     pub strategies: PaymentStrategySelector,
     /// Product catalog
     pub catalog: ProductCatalog,
-    /// Checkout URLs
+    /// Site registry (multi-tenant)
+    pub sites: SiteRegistry,
+    /// Checkout URLs (fallback for legacy routes)
     pub urls: CheckoutUrls,
     /// Application config
     pub config: AppConfig,
@@ -78,6 +80,9 @@ impl AppState {
         // Load product catalog
         let catalog = load_product_catalog()?;
 
+        // Load site registry
+        let sites = load_site_registry()?;
+
         // Initialize payment strategies
         let stripe_strategy = StripeCheckoutStrategy::from_env()
             .map_err(|e| anyhow::anyhow!("Failed to initialize Stripe: {}", e))?;
@@ -88,6 +93,7 @@ impl AppState {
         Ok(Self {
             strategies,
             catalog,
+            sites,
             urls,
             config,
         })
@@ -103,12 +109,43 @@ impl AppState {
         self.strategies.get(provider)
     }
 
-    /// Get success URL with session ID placeholder
+    /// Get a site by ID, or default if not found
+    pub fn get_site(&self, site_id: Option<&str>) -> Option<&Site> {
+        self.sites.get_or_default(site_id)
+    }
+
+    /// Get success URL for a site (with session ID placeholder)
+    pub fn success_url_for_site(&self, site_id: Option<&str>) -> String {
+        if let Some(site) = self.get_site(site_id) {
+            site.success_url_with_session()
+        } else {
+            // Fallback to default URLs
+            format!("{}?session_id={{CHECKOUT_SESSION_ID}}", self.urls.success_url())
+        }
+    }
+
+    /// Get cancel URL for a site
+    pub fn cancel_url_for_site(&self, site_id: Option<&str>) -> String {
+        if let Some(site) = self.get_site(site_id) {
+            site.cancel_url.clone()
+        } else {
+            self.urls.cancel_url()
+        }
+    }
+
+    /// Get statement descriptor suffix for a site
+    pub fn statement_descriptor_for_site(&self, site_id: Option<&str>) -> Option<String> {
+        self.get_site(site_id)
+            .map(|s| s.statement_descriptor_suffix.clone())
+            .filter(|s| !s.is_empty())
+    }
+
+    /// Get success URL with session ID placeholder (legacy, uses fallback)
     pub fn success_url(&self) -> String {
         format!("{}?session_id={{CHECKOUT_SESSION_ID}}", self.urls.success_url())
     }
 
-    /// Get cancel URL
+    /// Get cancel URL (legacy, uses fallback)
     pub fn cancel_url(&self) -> String {
         self.urls.cancel_url()
     }
@@ -135,6 +172,43 @@ fn load_product_catalog() -> anyhow::Result<ProductCatalog> {
     // Return empty catalog if no config found
     tracing::warn!("No product catalog found, using empty catalog");
     Ok(ProductCatalog::new())
+}
+
+/// Load site registry from config file
+fn load_site_registry() -> anyhow::Result<SiteRegistry> {
+    // Try to load from config/sites.toml
+    let config_paths = [
+        "config/sites.toml",
+        "../config/sites.toml",
+        "../../config/sites.toml",
+    ];
+
+    for path in config_paths {
+        if let Ok(content) = std::fs::read_to_string(path) {
+            let mut registry: SiteRegistry = toml::from_str(&content)
+                .map_err(|e| anyhow::anyhow!("Failed to parse {}: {}", path, e))?;
+            
+            // Set default site to chargegun
+            registry.set_default("chargegun");
+            
+            tracing::info!("Loaded {} sites from {}", registry.len(), path);
+            return Ok(registry);
+        }
+    }
+
+    // Return default registry with chargegun site if no config found
+    tracing::warn!("No site registry found, using default chargegun site");
+    
+    let mut registry = SiteRegistry::with_default("chargegun");
+    registry.add(
+        Site::new("chargegun", "ChargeGun", "chargegun.io")
+            .with_statement_descriptor("CHARGEGUN")
+            .with_success_url("https://chargegun.io/checkout/success")
+            .with_cancel_url("https://chargegun.io/checkout/cancel")
+            .with_support_email("info@chargegun.io")
+    );
+    
+    Ok(registry)
 }
 
 #[cfg(test)]

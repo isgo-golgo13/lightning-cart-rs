@@ -16,3 +16,4 @@ target
 .env
 .env.local
 ! .env.template
+.env.old

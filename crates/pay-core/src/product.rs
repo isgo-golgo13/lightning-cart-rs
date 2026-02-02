@@ -148,6 +148,8 @@ pub enum ProductType {
     ApiAccess,
     /// Physical product (future)
     Physical,
+    /// Service (consulting, reflections, etc.)
+    Service,
 }
 
 impl Default for ProductType {
@@ -161,6 +163,11 @@ impl Default for ProductType {
 pub struct Product {
     /// Unique product identifier (e.g., "rang-play-rs-pro")
     pub id: String,
+
+    /// Site ID this product belongs to (for multi-tenant support)
+    /// Defaults to "chargegun" for backwards compatibility
+    #[serde(default = "default_site_id")]
+    pub site_id: String,
 
     /// Display name
     pub name: String,
@@ -196,11 +203,16 @@ fn default_true() -> bool {
     true
 }
 
+fn default_site_id() -> String {
+    "chargegun".to_string()
+}
+
 impl Product {
     /// Create a new one-time purchase product
     pub fn one_time(id: impl Into<String>, name: impl Into<String>, price: Price) -> Self {
         Self {
             id: id.into(),
+            site_id: default_site_id(),
             name: name.into(),
             description: String::new(),
             product_type: ProductType::Digital,
@@ -221,6 +233,7 @@ impl Product {
     ) -> Self {
         Self {
             id: id.into(),
+            site_id: default_site_id(),
             name: name.into(),
             description: String::new(),
             product_type: ProductType::Subscription,
@@ -230,6 +243,12 @@ impl Product {
             image_url: None,
             metadata: std::collections::HashMap::new(),
         }
+    }
+
+    /// Builder: set site ID
+    pub fn with_site(mut self, site_id: impl Into<String>) -> Self {
+        self.site_id = site_id.into();
+        self
     }
 
     /// Builder: set description
@@ -280,9 +299,23 @@ impl ProductCatalog {
         self.products.iter().find(|p| p.id == id)
     }
 
+    /// Find a product by ID for a specific site
+    pub fn get_for_site(&self, id: &str, site_id: &str) -> Option<&Product> {
+        self.products
+            .iter()
+            .find(|p| p.id == id && p.site_id == site_id)
+    }
+
     /// Get all active products
     pub fn active_products(&self) -> impl Iterator<Item = &Product> {
         self.products.iter().filter(|p| p.active)
+    }
+
+    /// Get all active products for a specific site
+    pub fn active_products_for_site(&self, site_id: &str) -> impl Iterator<Item = &Product> {
+        self.products
+            .iter()
+            .filter(move |p| p.active && p.site_id == site_id)
     }
 
     /// Load catalog from TOML string
@@ -319,9 +352,11 @@ mod tests {
     fn test_product_builder() {
         let product = Product::one_time("test-product", "Test Product", Price::new(9.99, Currency::USD))
             .with_description("A test product")
+            .with_site("spokenhope")
             .with_metadata("tier", "pro");
 
         assert_eq!(product.id, "test-product");
+        assert_eq!(product.site_id, "spokenhope");
         assert_eq!(product.description, "A test product");
         assert_eq!(product.metadata.get("tier"), Some(&"pro".to_string()));
         assert!(!product.is_subscription());
@@ -338,5 +373,28 @@ mod tests {
 
         assert!(product.is_subscription());
         assert_eq!(product.billing_interval, BillingInterval::Monthly);
+        assert_eq!(product.site_id, "chargegun"); // default
+    }
+
+    #[test]
+    fn test_catalog_site_filtering() {
+        let mut catalog = ProductCatalog::new();
+        
+        catalog.add(
+            Product::one_time("prod-a", "Product A", Price::new(10.0, Currency::USD))
+                .with_site("chargegun")
+        );
+        catalog.add(
+            Product::one_time("prod-b", "Product B", Price::new(20.0, Currency::USD))
+                .with_site("spokenhope")
+        );
+
+        let chargegun_products: Vec<_> = catalog.active_products_for_site("chargegun").collect();
+        assert_eq!(chargegun_products.len(), 1);
+        assert_eq!(chargegun_products[0].id, "prod-a");
+
+        let spokenhope_products: Vec<_> = catalog.active_products_for_site("spokenhope").collect();
+        assert_eq!(spokenhope_products.len(), 1);
+        assert_eq!(spokenhope_products[0].id, "prod-b");
     }
 }

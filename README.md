@@ -276,14 +276,41 @@ Bank Statement: CHARGEGUN   CHARGEGUN*     CHARGEGUN*    CHARGEGUN*
 ## Makefile Execution
 
 ```shell
-make run            # → localhost URLs (sites-dev.toml)
-make run-prod       # → production URLs (sites.toml)
-make docker-run-dev # → Docker + localhost URLs
-make docker-run     # → Docker + production URLs
-fly deploy          # → production URLs (default)
+# 1. Build (state.rs changed)
+make build
+
+# 2. Test local with dev URLs
+make run
+# In another terminal:
+curl http://localhost:8080/health
+curl http://localhost:8080/api/v1/sites
+
+
+# 3. Test Docker
+make docker
+make docker-run-dev
+# In another terminal:
+curl http://localhost:8080/health
+curl http://localhost:8080/api/v1/sites
 ```
 
+## Deploy to Fly.io 
 
+```shell
+# 1. Create the app (no deploy yet)
+fly launch --no-deploy
+
+# 2. Set secrets BEFORE first deploy
+fly secrets set STRIPE_SECRET_KEY=sk_live_YOUR_REAL_KEY
+fly secrets set STRIPE_PUBLISHABLE_KEY=pk_live_YOUR_REAL_KEY
+fly secrets set STRIPE_WEBHOOK_SECRET=whsec_YOUR_REAL_SECRET
+
+# 3. Now deploy
+fly deploy
+
+fly secrets set CHARGEGUN_WEBHOOK_URL=...
+fly deploy
+```
 
 
 ## License

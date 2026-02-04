@@ -1,0 +1,60 @@
+# =============================================================================
+# Lightning-Cart RS - Fly.io Configuration
+# =============================================================================
+# Deploy: fly deploy
+# Logs:   fly logs
+# Status: fly status
+# SSH:    fly ssh console
+
+app = "lightning-cart-rs"
+primary_region = "lax"  # Los Angeles - closest to Hollywood/CA customers
+
+# Graceful shutdown for in-flight payment requests
+kill_signal = "SIGTERM"
+kill_timeout = 30
+
+[build]
+  dockerfile = "Dockerfile"
+
+# =============================================================================
+# NON-SENSITIVE ENVIRONMENT VARIABLES
+# =============================================================================
+# Stripe keys go in secrets: fly secrets set STRIPE_SECRET_KEY=sk_live_...
+[env]
+  HOST = "0.0.0.0"
+  PORT = "8080"
+  ENVIRONMENT = "production"
+  RUST_LOG = "info,pay_api=info,pay_stripe=info"
+  BASE_URL = "https://lightning-cart-rs.fly.dev"
+
+# =============================================================================
+# HTTP SERVICE
+# =============================================================================
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1  # Always keep 1 running - this is our payment gateway
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
+
+  # Health check - Fly.io will hit /health every 30s
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/health"
+
+# =============================================================================
+# MACHINE SIZE
+# =============================================================================
+# Rust binary is lightweight - shared-cpu-1x is plenty for a payment gateway
+# Can scale up later if needed: fly scale vm shared-cpu-2x
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

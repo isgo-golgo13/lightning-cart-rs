@@ -1,0 +1,10 @@
+target/
+.git/
+.gitignore
+.env
+.env.template
+*.md
+docker-compose.yml
+fly.toml
+.DS_Store
+**/.DS_Store

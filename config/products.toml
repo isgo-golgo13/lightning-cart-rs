@@ -116,7 +116,7 @@ currency = "usd"
 [products.metadata]
 tier = "consulting"
 delivery = "google_meet"
-duration_minutes = 60
+duration_minutes = "60"
 
 # =============================================================================
 # LUCKYDRONE.IO PRODUCTS
@@ -138,7 +138,7 @@ currency = "usd"
 [products.metadata]
 tier = "consulting"
 delivery = "google_meet"
-duration_minutes = 60
+duration_minutes = "60"
 
 # =============================================================================
 # DRONEGRID.IO PRODUCTS
@@ -160,7 +160,7 @@ currency = "usd"
 [products.metadata]
 tier = "consulting"
 delivery = "google_meet"
-duration_minutes = 60
+duration_minutes = "60"
 
 [[products]]
 id = "dronegrid-pro-monthly"

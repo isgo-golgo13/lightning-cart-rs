@@ -2,7 +2,7 @@
 # Lightning-Cart RS - Makefile
 # =============================================================================
 
-.PHONY: help build run test clean docker stripe-listen
+.PHONY: help build run test clean docker docker-flyio stripe-listen
 
 # Default target
 help:
@@ -13,7 +13,8 @@ help:
 	@echo "  make run            Run development server"
 	@echo "  make test           Run all tests"
 	@echo "  make clean          Clean build artifacts"
-	@echo "  make docker         Build Docker image"
+	@echo "  make docker         Build Docker image (native)"
+	@echo "  make docker-flyio   Build Docker image (linux/amd64 for Fly.io)"
 	@echo "  make docker-run     Run Docker container"
 	@echo "  make stripe-listen  Start Stripe webhook listener"
 	@echo "  make fmt            Format code"
@@ -52,6 +53,10 @@ lint:
 # Build Docker image
 docker:
 	docker build -t lightning-cart-rs .
+
+# Build Docker image for Fly.io (linux/amd64 from Apple Silicon)
+docker-flyio:
+	docker buildx build --platform linux/amd64 -t lightning-cart-rs:fly .
 
 # Run Docker container
 docker-run:

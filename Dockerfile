@@ -34,13 +34,15 @@ WORKDIR /app
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
     ca-certificates \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy binary from builder
 COPY --from=builder /app/target/release/lightning-cart /usr/local/bin/
 
-# Copy config files
+# Copy config and templates
 COPY config ./config
+COPY templates ./templates
 
 # Create non-root user
 RUN useradd -ms /bin/bash appuser

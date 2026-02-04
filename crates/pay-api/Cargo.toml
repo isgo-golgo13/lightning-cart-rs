@@ -30,6 +30,9 @@ serde.workspace = true
 serde_json.workspace = true
 toml.workspace = true
 
+# HTTP client (for webhook forwarding)
+reqwest.workspace = true
+
 # Error handling
 thiserror.workspace = true
 anyhow.workspace = true

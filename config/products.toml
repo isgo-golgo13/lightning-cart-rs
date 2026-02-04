@@ -259,3 +259,23 @@ currency = "usd"
 [products.metadata]
 tier = "test"
 note = "Sabadell → FECU validation"
+
+# Test consulting product for $1 — validates full webhook → Vercel pipeline
+[[products]]
+id = "test-consult-1"
+site_id = "chargegun"
+name = "Test Consultation ($1)"
+description = "One dollar test product for consulting webhook pipeline validation."
+product_type = "service"
+billing_interval = "onetime"
+active = true
+
+[products.price]
+amount = 100  # $1.00
+currency = "usd"
+
+[products.metadata]
+tier = "test"
+type = "consultation"
+duration_minutes = "60"
+note = "Pipeline test — Payment → Webhook → Vercel → TursoDB → Calendar → Email"

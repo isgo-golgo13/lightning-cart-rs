@@ -5,6 +5,7 @@
 
 use pay_core::{BoxedPaymentStrategy, CheckoutUrls, PaymentStrategySelector, ProductCatalog, Site, SiteRegistry};
 use pay_stripe::StripeCheckoutStrategy;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Application configuration
@@ -69,6 +70,10 @@ pub struct AppState {
     pub urls: CheckoutUrls,
     /// Application config
     pub config: AppConfig,
+    /// HTTP client for webhook forwarding
+    pub http_client: reqwest::Client,
+    /// Webhook forward URLs per site (site_id → Vercel webhook URL)
+    pub webhook_forward_urls: HashMap<String, String>,
 }
 
 impl AppState {
@@ -90,12 +95,39 @@ impl AppState {
         let mut strategies = PaymentStrategySelector::new("stripe");
         strategies.register(Arc::new(stripe_strategy) as BoxedPaymentStrategy);
 
+        // HTTP client for webhook forwarding to Vercel
+        let http_client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(15))
+            .build()
+            .expect("Failed to create HTTP client");
+
+        // Load webhook forward URLs from environment
+        let mut webhook_forward_urls = HashMap::new();
+        if let Ok(url) = std::env::var("CHARGEGUN_WEBHOOK_URL") {
+            tracing::info!("Webhook forwarding enabled for chargegun → {}", url);
+            webhook_forward_urls.insert("chargegun".to_string(), url);
+        }
+        if let Ok(url) = std::env::var("LUCKYDRONE_WEBHOOK_URL") {
+            tracing::info!("Webhook forwarding enabled for luckydrone → {}", url);
+            webhook_forward_urls.insert("luckydrone".to_string(), url);
+        }
+        if let Ok(url) = std::env::var("DRONEGRID_WEBHOOK_URL") {
+            tracing::info!("Webhook forwarding enabled for dronegrid → {}", url);
+            webhook_forward_urls.insert("dronegrid".to_string(), url);
+        }
+        if let Ok(url) = std::env::var("SPOKENHOPE_WEBHOOK_URL") {
+            tracing::info!("Webhook forwarding enabled for spokenhope → {}", url);
+            webhook_forward_urls.insert("spokenhope".to_string(), url);
+        }
+
         Ok(Self {
             strategies,
             catalog,
             sites,
             urls,
             config,
+            http_client,
+            webhook_forward_urls,
         })
     }
 

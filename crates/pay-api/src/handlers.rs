@@ -12,7 +12,7 @@ use axum::{
     Json,
 };
 use pay_core::{Currency, LineItem, Order, PaymentError};
-use pay_stripe::{dispatch_webhook_event, LoggingWebhookHandler};
+use pay_stripe::{dispatch_webhook_event, CheckoutCompletedData, LoggingWebhookHandler};
 use serde::{Deserialize, Serialize};
 use tracing::{error, info, instrument};
 
@@ -24,7 +24,11 @@ use tracing::{error, info, instrument};
 #[derive(Debug, Deserialize)]
 pub struct CreateCheckoutRequest {
     /// Items to purchase
+    #[serde(default)]
     pub items: Vec<CheckoutItem>,
+    /// Convenience: single product_id (alternative to items array for single-product checkout)
+    #[serde(default)]
+    pub product_id: Option<String>,
     /// Customer email (optional)
     #[serde(default)]
     pub customer_email: Option<String>,
@@ -37,6 +41,9 @@ pub struct CreateCheckoutRequest {
     /// Site ID for multi-tenant (optional, can also be in URL path)
     #[serde(default)]
     pub site_id: Option<String>,
+    /// Custom metadata to pass through to Stripe (e.g., consultation booking details)
+    #[serde(default)]
+    pub metadata: std::collections::HashMap<String, String>,
 }
 
 /// Item in checkout request
@@ -144,13 +151,20 @@ async fn create_checkout_internal(
     request: CreateCheckoutRequest,
     site_id: Option<&str>,
 ) -> Result<Json<CreateCheckoutResponse>, (StatusCode, Json<ErrorResponse>)> {
-    // Validate request
-    if request.items.is_empty() {
+    // Support single product_id as shorthand for items array
+    let items = if !request.items.is_empty() {
+        request.items
+    } else if let Some(ref pid) = request.product_id {
+        vec![CheckoutItem {
+            product_id: pid.clone(),
+            quantity: 1,
+        }]
+    } else {
         return Err((
             StatusCode::BAD_REQUEST,
-            Json(ErrorResponse::new("No items in checkout request", 400)),
+            Json(ErrorResponse::new("No items in checkout request (provide 'items' array or 'product_id')", 400)),
         ));
-    }
+    };
 
     // Get payment strategy
     let provider = request.provider.as_deref();
@@ -185,8 +199,13 @@ async fn create_checkout_internal(
         order.metadata.insert("statement_descriptor_suffix".to_string(), descriptor);
     }
 
+    // Merge request metadata into order (consultation booking details, etc.)
+    for (key, value) in &request.metadata {
+        order.metadata.insert(key.clone(), value.clone());
+    }
+
     // Add line items
-    for item in &request.items {
+    for item in &items {
         let product = state.catalog.get(&item.product_id).ok_or_else(|| {
             (
                 StatusCode::NOT_FOUND,
@@ -292,13 +311,72 @@ pub async fn stripe_webhook(
         info!("Webhook for site: {}", sid);
     }
 
-    // Dispatch to handler
-    // In production, you'd implement a custom WebhookHandler
+    // Extract consultation data BEFORE dispatch consumes the event
+    let consultation_forward = if matches!(&event.event_type, pay_core::WebhookEventType::CheckoutCompleted) {
+        match CheckoutCompletedData::from_event(&event) {
+            Ok(data) if data.metadata.contains_key("appointment_date") => {
+                let forward_site = data.metadata.get("site_id").cloned()
+                    .unwrap_or_else(|| "chargegun".to_string());
+                Some((forward_site, data))
+            }
+            _ => None,
+        }
+    } else {
+        None
+    };
+
+    // Dispatch to existing handler (unchanged — LoggingWebhookHandler just logs)
     let handler = LoggingWebhookHandler;
     dispatch_webhook_event(&handler, event).map_err(|e| {
         error!("Webhook handler error: {}", e);
         payment_error_to_response(e)
     })?;
+
+    // === Forward consultation bookings to Vercel ===
+    if let Some((forward_site, data)) = consultation_forward {
+        if let Some(webhook_url) = state.webhook_forward_urls.get(&forward_site) {
+            info!(
+                "Forwarding consultation to Vercel: site={}, payment={:?}, amount={}",
+                forward_site, data.payment_intent_id, data.amount_total
+            );
+
+            // Build payload matching Vercel consultation-webhook.js expectations
+            let payload = serde_json::json!({
+                "firstName": data.metadata.get("client_first_name").cloned().unwrap_or_default(),
+                "lastName": data.metadata.get("client_last_name").cloned().unwrap_or_default(),
+                "email": data.metadata.get("client_email").cloned().unwrap_or_default(),
+                "appointmentDate": data.metadata.get("appointment_date").cloned().unwrap_or_default(),
+                "appointmentTime": data.metadata.get("appointment_time").cloned().unwrap_or_default(),
+                "duration": data.metadata.get("duration").and_then(|d| d.parse::<i32>().ok()).unwrap_or(1),
+                "amountCents": data.amount_total,
+                "stripePaymentId": data.payment_intent_id.clone().unwrap_or_else(|| "unknown".to_string()),
+            });
+
+            match state.http_client
+                .post(webhook_url)
+                .json(&payload)
+                .send()
+                .await
+            {
+                Ok(resp) => {
+                    let status = resp.status();
+                    let body = resp.text().await.unwrap_or_default();
+                    if status.is_success() {
+                        info!("Vercel webhook success: {} | {}", status, body);
+                    } else {
+                        error!("Vercel webhook error: {} | {}", status, body);
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to forward to Vercel: {}", e);
+                    // Don't fail the Stripe webhook — we received the event successfully.
+                    // The Vercel call can be retried manually if needed.
+                }
+            }
+        } else {
+            info!("No webhook_forward_url configured for site: {}", forward_site);
+        }
+    }
 
     Ok(StatusCode::OK)
 }

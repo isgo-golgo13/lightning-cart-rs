@@ -1,19 +1,16 @@
-# Lightning-Cart Multi-Tenant Site Configuration (PRODUCTION)
-# Each site has its own branding, URLs, and statement descriptor
+# Lightning-Cart Multi-Tenant Site Configuration (DEVELOPMENT)
+# Uses localhost URLs for local testing
 #
-# The statement_descriptor_suffix appears on customer bank statements:
-# "CHARGEGUN* SPOKENHOPE" or "CHARGEGUN* DRONEGRID"
-#
-# For local development, use: SITES_CONFIG=config/sites-dev.toml
-# Or simply: make run (Makefile sets this automatically)
+# Usage: SITES_CONFIG=config/sites-dev.toml make run
+# Or:    make run (Makefile sets this automatically)
 
 [[sites]]
 id = "chargegun"
 name = "ChargeGun"
 domain = "chargegun.io"
 statement_descriptor_suffix = ""
-success_url = "https://chargegun.io/checkout/success"
-cancel_url = "https://chargegun.io/checkout/cancel"
+success_url = "http://localhost:8080/checkout/success?session_id={CHECKOUT_SESSION_ID}"
+cancel_url = "http://localhost:8080/checkout/cancel"
 support_email = "info@chargegun.io"
 active = true
 
@@ -25,8 +22,8 @@ id = "luckydrone"
 name = "LuckyDrone"
 domain = "luckydrone.io"
 statement_descriptor_suffix = "LUCKYDRONE"
-success_url = "https://luckydrone.io/checkout/success"
-cancel_url = "https://luckydrone.io/checkout/cancel"
+success_url = "http://localhost:8080/checkout/success?session_id={CHECKOUT_SESSION_ID}"
+cancel_url = "http://localhost:8080/checkout/cancel"
 support_email = "info@luckydrone.io"
 active = true
 
@@ -38,8 +35,8 @@ id = "dronegrid"
 name = "DroneGrid"
 domain = "dronegrid.io"
 statement_descriptor_suffix = "DRONEGRID"
-success_url = "https://dronegrid.io/checkout/success"
-cancel_url = "https://dronegrid.io/checkout/cancel"
+success_url = "http://localhost:8080/checkout/success?session_id={CHECKOUT_SESSION_ID}"
+cancel_url = "http://localhost:8080/checkout/cancel"
 support_email = "info@dronegrid.io"
 active = true
 
@@ -51,8 +48,8 @@ id = "spokenhope"
 name = "Spoken Hope"
 domain = "spokenhope.care"
 statement_descriptor_suffix = "SPOKENHOPE"
-success_url = "https://spokenhope.care/thank-you"
-cancel_url = "https://spokenhope.care/"
+success_url = "http://localhost:8080/checkout/success?session_id={CHECKOUT_SESSION_ID}"
+cancel_url = "http://localhost:8080/checkout/cancel"
 support_email = "info@spokenhope.care"
 active = true
 

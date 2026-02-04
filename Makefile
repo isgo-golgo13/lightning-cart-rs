@@ -10,7 +10,8 @@ help:
 	@echo ""
 	@echo "Usage:"
 	@echo "  make build          Build release binary"
-	@echo "  make run            Run development server"
+	@echo "  make run            Run dev server (localhost URLs)"
+	@echo "  make run-prod       Run dev server (production URLs)"
 	@echo "  make test           Run all tests"
 	@echo "  make clean          Clean build artifacts"
 	@echo "  make docker         Build Docker image (native)"
@@ -25,8 +26,12 @@ help:
 build:
 	cargo build --release -p pay-api
 
-# Run development server
+# Run development server (uses localhost URLs via sites-dev.toml)
 run:
+	SITES_CONFIG=config/sites-dev.toml RUST_LOG=debug cargo run -p pay-api
+
+# Run development server with production URLs (for pre-deploy testing)
+run-prod:
 	RUST_LOG=debug cargo run -p pay-api
 
 # Run all tests
@@ -58,9 +63,13 @@ docker:
 docker-flyio:
 	docker buildx build --platform linux/amd64 -t lightning-cart-rs:fly .
 
-# Run Docker container
+# Run Docker container (production URLs)
 docker-run:
-	docker run -p 8080:8080 --env-file .env lightning-cart-rs
+	docker run --init -it --rm -p 8080:8080 --env-file .env -e HOST=0.0.0.0 lightning-cart-rs
+
+# Run Docker container (localhost URLs for testing)
+docker-run-dev:
+	docker run --init -it --rm -p 8080:8080 --env-file .env -e HOST=0.0.0.0 -e SITES_CONFIG=config/sites-dev.toml lightning-cart-rs
 
 # Start Docker Compose
 up:

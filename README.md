@@ -273,10 +273,19 @@ Bank Statement: CHARGEGUN   CHARGEGUN*     CHARGEGUN*    CHARGEGUN*
                             LUCKYDRONE     SPOKENHOPE    DRONEGRID
 ```
 
+## Makefile Execution
+
+```shell
+make run            # → localhost URLs (sites-dev.toml)
+make run-prod       # → production URLs (sites.toml)
+make docker-run-dev # → Docker + localhost URLs
+make docker-run     # → Docker + production URLs
+fly deploy          # → production URLs (default)
+```
 
 
 
 
 ## License
 
-Proprietary - EngineVector.io
+Proprietary - chargegun.io

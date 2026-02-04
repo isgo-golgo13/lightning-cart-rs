@@ -176,12 +176,19 @@ fn load_product_catalog() -> anyhow::Result<ProductCatalog> {
 
 /// Load site registry from config file
 fn load_site_registry() -> anyhow::Result<SiteRegistry> {
-    // Try to load from config/sites.toml
-    let config_paths = [
-        "config/sites.toml",
-        "../config/sites.toml",
-        "../../config/sites.toml",
-    ];
+    // Check for SITES_CONFIG env var override (e.g., config/sites-dev.toml for local testing)
+    let env_path = std::env::var("SITES_CONFIG").ok();
+    
+    let config_paths: Vec<&str> = if let Some(ref p) = env_path {
+        tracing::info!("Using SITES_CONFIG override: {}", p);
+        vec![p.as_str()]
+    } else {
+        vec![
+            "config/sites.toml",
+            "../config/sites.toml",
+            "../../config/sites.toml",
+        ]
+    };
 
     for path in config_paths {
         if let Ok(content) = std::fs::read_to_string(path) {
